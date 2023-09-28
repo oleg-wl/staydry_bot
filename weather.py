@@ -22,16 +22,19 @@ class Forecast:
         r = requests.get(url=url,params=params)
 
         self.data = r.json()
+
         return self
 
     def parse_html(self):
 
         l = []
-        for t in self.data['list']:
-            s = f'Погода {t["dt_txt"]} Температура {t["main"]["temp"]} Погода {t["weather"][0]["description"].capitalize()} Ветер {t["wind"]["speed"]} Осадки {t["pop"]}'
-            l.append(s)
+        if self.data['cod'] == '200':
+            for t in self.data['list']:
+                s = f'--> {t["dt_txt"]} <------\nТемпература {t["main"]["temp"]}\nПогода {t["weather"][0]["description"].capitalize()}\nВетер {t["wind"]["speed"]}\nОсадки {t["pop"]}'
+                l.append(s)
             
-        return ''.join(l)
+            return '\n'.join(l)
+        else: return f'Твой город не найден. /city чтобы добавить свой город'
 
 if __name__ == "__main__":
     t = Forecast()
