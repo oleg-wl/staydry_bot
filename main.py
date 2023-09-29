@@ -23,7 +23,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if name == None:
         _insert(user_id=update.effective_chat.id, name=update.effective_chat.username)
-        await context.bot.send_message(chat_id=uid, text=f'Приятно познакомиться {uname}. Я погодный бот.\nСкажи мне свой город и я смогу присылать тебе погоду на ближайшее время.\nКоманда /city и твой город')
+        await context.bot.send_message(chat_id=uid, text=f'Приятно познакомиться {uname}. Я погодный бот.\nСкажи мне свой город и я смогу присылать тебе погоду на ближайшее время.\nОтправь мне /city и твой город')
     
     else: await context.bot.send_message(
         chat_id=uid,
@@ -32,20 +32,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def city(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    city: str = ' '.join(context.args).capitalize()
+    city: str = ' '.join(context.args).capitalize().strip()
     uid = update.effective_chat.id
 
     _update_city(city=city, uid=uid)
+    msg = f'Круто, твой город теперь {city}. Команда /forecast чтобы узнать погоду'
+    if len(city) == 0: msg = 'Мне нужно знать город. Добавь его к коменде /city\nНапример: /city Новосибирск'
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f'Круто, твой город теперь {city}. Команда /forecast чтобы узнать погоду')
+        text=msg)
 
 async def forecast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     uid = update.effective_chat.id
 
-    city = _select(uid=uid)[1]
+    name, city = _select(uid=uid)
+
+    if name == None:
+        await context.bot.send_message(chat_id=uid, text='Прости я забыл о нашем знакомтве. Давай начнем с начала. Нажми /start ')
+        return
+
+    if (city == None) or (len(city) == 0):
+        await context.bot.send_message(chat_id=update.effective_chat.id, text='Прости, я не знаю какой город тебе нужен. Отправь мне /city и название города')
+        return
 
     if city != None:
         w = Forecast()
@@ -53,9 +63,10 @@ async def forecast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         s = w.parse_html()
         
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=s)
+            chat_id=uid,
+            text=f'Погода в {city} на ближайшее время\n'+s)
 
+        
 if __name__ == "__main__":
 
     app = ApplicationBuilder().token(bot_token).build() 
