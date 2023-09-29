@@ -2,14 +2,18 @@
 import requests
 import datetime
 
-from utils import w_token
+from utils import default_params
+from utils import weather_id as _weather_id
+from utils import wind as _wind
+from utils import clock as _clock
+from utils import get_logger
 
 class Forecast:
 
     def __init__(self) -> None:
 
-        self.r = requests.session()
-        self.data = None
+        self.r = requests.Session()
+        self.logger = get_logger(level='debug')
 
     def get_weather_12h(self, city) -> dict:
         """
@@ -20,16 +24,30 @@ class Forecast:
         :return dict: 
         """
         url = 'https://api.openweathermap.org/data/2.5/forecast'
-        params = {
-            'appid':w_token,
-            'q': city,
-            'lang':'ru',
-            'units':'metric',
-            'cnt':4,
-            'mode':'json'}
-        r = requests.get(url=url,params=params)
+        params = default_params
+        params['q'] = city
+        params['cnt'] = 4
+        
+        resp = self.r.get(url=url,params=params)
 
-        return r.json()
+        if resp.status_code != 200:
+            self.logger.error(f'{resp.status_code}')
+            return 'Проблемы на стороне сервиса. Попробуй попозже'
+
+        return resp.json()
+
+    def get_current_weather(self, city: str) -> dict:
+        url = 'https://api.openweathermap.org/data/2.5/weather'
+        params = default_params
+        params['q'] = city
+
+        resp = self.r.get(url=url, params=params)
+
+        if resp.status_code != 200:
+            self.logger.error(f'{resp.status_code}')
+            return 'Проблемы на стороне сервиса. Попробуй попозже'
+
+        return resp.json()
 
     def weather_12h(self, city:str) -> str:
         """
@@ -55,31 +73,9 @@ class Forecast:
                 popcount += pop
                 m = '\n\U0001F6B4\u200D\u2642\uFE0F Можно ехать на велике'
 
-                h = ''
-                if (data.hour == 3) or (data.hour == 15):
-                    h = '\uE026' #3
-                elif (data.hour == 6) or (data.hour == 18):
-                    h = '\U0001F561' # 6 часов
-                elif (data.hour == 9) or (data.hour == 21):
-                    h = '\uE02C' #9
-                elif (data.hour == 12) or (data.hour == 0):
-                    h = '\uE02F' # 12
-                
-                warn = 'Ветер'
-                if wind > 5:
-                    warn = '\uE252 Сильный ветер '
-
-                wid = ''
-                if weather_id == 800: #clear sky
-                    wid = '\uE04A'
-                elif weather_id in range(500,532): #rain
-                    wid = '\U0001F327'
-                elif weather_id in range(600, 623): #snow
-                    wid = '\U0001F328'
-                elif weather_id in range(800, 805):
-                    wid = '\U0001F325'
-                else: wid = '\u26C8'
-                
+                h = _clock(data.hour)
+                warn = _wind(wind)
+                wid = _weather_id(weather_id)
 
                 s = f'{h} в {data.hour} {wid} {desc}, {temp} градусов\n{warn} - {wind}\nОсадки - {pop}'
                 l.append(s)
@@ -89,4 +85,30 @@ class Forecast:
             msg = '\n'.join(l)
             return msg+m
         else: return f'Твой город не найден. /city чтобы добавить свой город'
+
+    def current_weather(self, city):
+
+        r = self.get_current_weather(city=city)
+
+        if isinstance(r, str):
+            return r
+        
+        date = datetime.datetime.fromtimestamp(r['dt'])
+        temp = round(r['main']['temp'], 1)
+        desc = r['weather'][0]['description'].capitalize()
+        weather_id = r['weather'][0]['id']
+        sunrise = datetime.datetime.fromtimestamp(r['sys']['sunrise'])
+        sunset = datetime.datetime.fromtimestamp(r['sys']['sunset'])
+        wind = round(r['wind']['speed'], 1)
+        
+        fmt='%H:%m'
+        
+        w = _weather_id(weather_id)
+        wi = _wind(wind)
+        
+        s = f'Погода {date.strftime("%H:%m %d-%m")}\n{w} {desc}, {temp} градусов\nРассвет в {sunrise.strftime(fmt)} Закат в {sunset.strftime(fmt)}\n{wi} {wind} м/с'
+        return s
+        
+        
+        
 

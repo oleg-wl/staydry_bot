@@ -9,8 +9,7 @@ from weather import Forecast
 from db import _select, _insert, _update_city
 
 logging.basicConfig(
-    format='[%(levelname)s] - %(asctime)s on %(name)s \n --- \n %(message)s',
-    level=logging.WARNING
+    format='[%(levelname)s] - %(asctime)s on %(name)s \n --- \n %(message)s'
     )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
