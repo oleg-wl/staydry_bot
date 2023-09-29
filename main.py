@@ -62,7 +62,7 @@ async def forecast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await context.bot.send_message(
             chat_id=uid,
-            text=f'Погода в городе {city} на ближайшее время\n'+s)
+            text=f'Погода в городе {city} на ближайшее время\n\n'+s)
 
         
 if __name__ == "__main__":

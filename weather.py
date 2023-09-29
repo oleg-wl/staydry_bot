@@ -51,7 +51,7 @@ class Forecast:
                     h = '\U0001F561' # 6 часов
                 elif (data.hour == 9) or (data.hour == 21):
                     h = '\uE02C' #9
-                elif (data.hour == 12) or (data.hour == 24):
+                elif (data.hour == 12) or (data.hour == 0):
                     h = '\uE02F' # 12
                 
                 warn = 'Ветер'
@@ -70,7 +70,7 @@ class Forecast:
                 else: wid = '\u26C8'
                 
 
-                s = f'{h} в {data.hour}\n{wid} {desc}\nСредняя - {temp}\n{warn} - {wind}\nОсадки - {pop}'
+                s = f'{h} в {data.hour} {wid} {desc}\nСредняя - {temp}\n{warn} - {wind}\nОсадки - {pop}'
                 l.append(s)
 
                 
