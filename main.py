@@ -56,9 +56,9 @@ async def forecast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if city != None:
-        w = Forecast()
-        w.get_weather(city=city)
-        s = w.parse_html()
+
+        #Получить погоду за 12 часов
+        s = Forecast().weather_12h(city=city)
         
         await context.bot.send_message(
             chat_id=uid,

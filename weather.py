@@ -11,7 +11,14 @@ class Forecast:
         self.r = requests.session()
         self.data = None
 
-    def get_weather(self, city):
+    def get_weather_12h(self, city) -> dict:
+        """
+        Метод возвращает ответ API OWM 5d3h погоды
+        Документация к api - https://openweathermap.org/forecast5
+
+        :param _type_ city: город для подстановки в запрос. Вернет сообщение если город не найден
+        :return dict: 
+        """
         url = 'https://api.openweathermap.org/data/2.5/forecast'
         params = {
             'appid':w_token,
@@ -22,17 +29,21 @@ class Forecast:
             'mode':'json'}
         r = requests.get(url=url,params=params)
 
-        self.data = r.json()
+        return r.json()
 
-        return self
+    def weather_12h(self, city:str) -> str:
+        """
+        Метод возвращает распарсеный словарь из get_weather_12h для подстановки в сообщение
 
-    def parse_html(self):
+        :param str city: город
+        :return str: сообщение для передачи боту
+        """
 
-        header = ''
+        r = self.get_weather_12h(city=city)
         popcount = 0
         l = []
-        if self.data['cod'] == '200':
-            for row in self.data['list']:
+        if r['cod'] == '200':
+            for row in r['list']:
 
                 data: datetime.datetime = datetime.datetime.strptime(row['dt_txt'], '%Y-%m-%d %H:%M:%S')
                 temp: float = round(row['main']['temp'], 1)
@@ -70,16 +81,12 @@ class Forecast:
                 else: wid = '\u26C8'
                 
 
-                s = f'{h} в {data.hour} {wid} {desc}\nСредняя - {temp}\n{warn} - {wind}\nОсадки - {pop}'
+                s = f'{h} в {data.hour} {wid} {desc}, {temp} градусов\n{warn} - {wind}\nОсадки - {pop}'
                 l.append(s)
 
                 
-            if popcount > 3: m = '\n\U0001F327 Возьми дождевик и езжай на метре'
+            if popcount > 1: m = '\n\U0001F327 Возьми дождевик и езжай на метре'
             msg = '\n'.join(l)
             return msg+m
         else: return f'Твой город не найден. /city чтобы добавить свой город'
 
-if __name__ == "__main__":
-    t = Forecast()
-    t.get_weather('Санкт-Петербург')
-    print(t.parse_html())
