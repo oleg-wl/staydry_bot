@@ -14,9 +14,14 @@ default_params = {
     'lang':'ru'
     }
 
+f = {
+    'fmt':'%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
+    'datefmt':'%d-%m-%Y, %H:%M:%S'
+    }
+
 def get_logger(name:str = __name__, level = 'DEBUG'):
     level = level.upper()
-    formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%m-%Y, %H:%M:%S')
+    formatter = logging.Formatter(**f)
 
     logger = logging.getLogger(name)
     logger.setLevel(level=level)

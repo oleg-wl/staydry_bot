@@ -30,10 +30,6 @@ class Forecast:
         
         resp = self.r.get(url=url,params=params)
 
-        if resp.status_code != 200:
-            self.logger.error(f'{resp.status_code}')
-            return 'Проблемы на стороне сервиса. Попробуй попозже'
-
         return resp.json()
 
     def get_current_weather(self, city: str) -> dict:
@@ -42,10 +38,6 @@ class Forecast:
         params['q'] = city
 
         resp = self.r.get(url=url, params=params)
-
-        if resp.status_code != 200:
-            self.logger.error(f'{resp.status_code}')
-            return 'Проблемы на стороне сервиса. Попробуй попозже'
 
         return resp.json()
 
@@ -84,30 +76,36 @@ class Forecast:
             if popcount > 1: m = '\n\U0001F327 Возьми дождевик и езжай на метре'
             msg = '\n'.join(l)
             return msg+m
-        else: return f'Твой город не найден. /city чтобы добавить свой город'
+        else: return 'Твой город не найден. /city чтобы добавить свой город'
 
     def current_weather(self, city):
 
         r = self.get_current_weather(city=city)
 
-        if isinstance(r, str):
-            return r
-        
-        date = datetime.datetime.fromtimestamp(r['dt'])
-        temp = round(r['main']['temp'], 1)
-        desc = r['weather'][0]['description'].capitalize()
-        weather_id = r['weather'][0]['id']
-        sunrise = datetime.datetime.fromtimestamp(r['sys']['sunrise'])
-        sunset = datetime.datetime.fromtimestamp(r['sys']['sunset'])
-        wind = round(r['wind']['speed'], 1)
-        
-        fmt='%H:%m'
-        
-        w = _weather_id(weather_id)
-        wi = _wind(wind)
-        
-        s = f'Погода {date.strftime("%H:%m %d-%m")}\n{w} {desc}, {temp} градусов\nРассвет в {sunrise.strftime(fmt)} Закат в {sunset.strftime(fmt)}\n{wi} {wind} м/с'
-        return s
+        if r['cod'] == 200:
+            date = datetime.datetime.fromtimestamp(r['dt'])
+            temp = round(r['main']['temp'], 1)
+            desc = r['weather'][0]['description'].capitalize()
+            weather_id = r['weather'][0]['id']
+            sunrise = datetime.datetime.fromtimestamp(r['sys']['sunrise'])
+            sunset = datetime.datetime.fromtimestamp(r['sys']['sunset'])
+            wind = round(r['wind']['speed'], 1)
+            rain = r.get('rain')
+            snow = r.get('snow')
+
+            if rain != None:
+                warn = '\n\U0001F327 Идет дождик'
+            elif snow != None: warn = 'Идет снег' 
+            else: warn = ''
+            
+            fmt='%H:%M'
+            
+            w = _weather_id(weather_id)
+            wi = _wind(wind)
+            
+            s = f'Сейчас {date.strftime("%H:%M %d.%m.%Y")}\n{w} {desc}\nЗа бортом {temp} градусов\nРассвет в {sunrise.strftime(fmt)} Закат в {sunset.strftime(fmt)}\n{wi} {wind} м/с\n{warn}'
+            return s
+        else: return 'Твой город не найден. /city чтобы добавить свой город'
         
         
         
