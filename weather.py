@@ -42,7 +42,7 @@ class Forecast:
                 pop: float = row['pop']
 
                 popcount += pop
-                m = '\n\U0001F6B4\u200D\u2642\uFE0F Можно ехать'
+                m = '\n\U0001F6B4\u200D\u2642\uFE0F Можно ехать на велике'
 
                 h = ''
                 if (data.hour == 3) or (data.hour == 15):
@@ -70,7 +70,7 @@ class Forecast:
                 else: wid = '\u26C8'
                 
 
-                s = f'{h} в {data.hour} часов \n{wid} {desc}\nСредняя {temp}\n{warn} {wind}\nОсадки {pop}'
+                s = f'{h} в {data.hour}\n{wid} {desc}\nСредняя - {temp}\n{warn} - {wind}\nОсадки - {pop}'
                 l.append(s)
 
                 

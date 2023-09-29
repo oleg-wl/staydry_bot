@@ -10,12 +10,10 @@ from db import _select, _insert, _update_city
 
 logging.basicConfig(
     format='[%(levelname)s] - %(asctime)s on %(name)s \n --- \n %(message)s',
-    level=logging.INFO
+    level=logging.WARNING
     )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    #TODO 1. проверить есть ли id в базе. Если есть то приветствие, если нет, до добавить
-    #TODO 2. Клавиатура: Выбрать город, Прогноз
     uid = update.effective_chat.id
     uname = update.effective_chat.username
 
@@ -64,7 +62,7 @@ async def forecast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await context.bot.send_message(
             chat_id=uid,
-            text=f'Погода в {city} на ближайшее время\n'+s)
+            text=f'Погода в городе {city} на ближайшее время\n'+s)
 
         
 if __name__ == "__main__":

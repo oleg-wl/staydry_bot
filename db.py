@@ -10,7 +10,7 @@ from sqlalchemy import select, insert, update
 from sqlalchemy.orm import Session
 
 import logging
-logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.WARNING)
 
 engine = create_engine(url='sqlite+pysqlite:///database.db', echo=True)
 
@@ -58,4 +58,5 @@ def _update_city(city=None, uid=None):
 
 #metadata_obj.drop_all(bind=engine)
 #metadata_obj.create_all(bind=engine)
-#_update_city(city='new_city', uid='test_id')
+#update_city(city='new_city', uid='test_id')
+
