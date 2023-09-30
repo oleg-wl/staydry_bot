@@ -79,23 +79,25 @@ def clock(h: int) -> str:
     return clock
 
 #Декораторы 
-def decorator(func):
-    @wraps(func)
-    def wrapper(uid, city):
+def decorator_select(func1=None):
+    def decorator_weather(func2=None):
+        @wraps(func2)
+        def wrapper(*args, **kwargs):
         
-        name, city = _select(uid)
+            name, city = func1(*args, **kwargs)
 
-        if name == None:
-            msg = "Прости я забыл о нашем знакомтве. Давай начнем с начала. Нажми /start "
-            return msg
+            if name == None:
+                msg = "Прости я забыл о нашем знакомтве. Давай начнем с начала. Нажми /start "
+                return msg
 
-        if (city == None) or (len(city) == 0):
-            msg = "Прости, я не знаю какой город тебе нужен. Отправь мне /city и название города"
-            return msg
+            if (city == None) or (len(city) == 0):
+                msg = "Прости, я не знаю какой город тебе нужен. Отправь мне /city и название города"
+                return msg
 
-        if city != None:
-        # Получить погоду
-            s = wrapper(city=city)
-            msg = f"Погода в городе {city} на ближайшее время\n" + s
-        return msg
-    return func
+            if city != None:
+            # Получить погоду
+                s = func2(city=city)
+                
+            return s
+        return wrapper
+    return decorator_weather

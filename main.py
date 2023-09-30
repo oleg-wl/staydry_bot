@@ -11,7 +11,7 @@ from telegram.ext import (
     CallbackQueryHandler,
 )
 
-from utils import bot_token, f
+from utils import bot_token, f, decorator_select
 
 import logging
 
@@ -95,43 +95,18 @@ async def city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=uid, text=msg, reply_markup=rep_marcup)
 
 
-#!Оберни в декоратор!!!
-def forecast_12h(uid):
-    name, city = _select(uid=uid)
+#!Обернуто в декоратор из utils.py
+#Декоратор делает запрос в базу. 
+#Проверка что name и city есть в database.db
+#Если имя и город есть, делается запрос к Апи. 
+#Если ошибка (задекорирована) возвращает сообщение об ошибке
+@decorator_select(func1=_select)
+def forecast_12h(*args, **kwargs):
+        return Forecast().weather_12h(*args, **kwargs)
 
-    if name == None:
-        msg = "Прости я забыл о нашем знакомтве. Давай начнем с начала. Нажми /start "
-        return msg
-
-    if (city == None) or (len(city) == 0):
-        msg = "Прости, я не знаю какой город тебе нужен. Отправь мне /city и название города"
-        return msg
-
-    if city != None:
-        # Получить погоду за 12 часов
-        s = Forecast().weather_12h(city=city)
-
-        msg = f"Погода в городе {city} на ближайшее время\n" + s
-        return msg
-
-
-def forecast_now(uid):
-    name, city = _select(uid=uid)
-
-    if name == None:
-        msg = "Прости я забыл о нашем знакомтве. Давай начнем с начала. Нажми /start "
-        return msg
-
-    if (city == None) or (len(city) == 0):
-        msg = "Прости, я не знаю какой город тебе нужен. Отправь мне /city и название города"
-        return msg
-
-    if city != None:
-        # Получить текущую
-        s = Forecast().current_weather(city=city)
-
-        msg = f"Погода в городе {city}\n" + s
-        return msg
+@decorator_select(func1=_select)
+def forecast_now(*args, **kwargs):
+    return Forecast().current_weather(*args, **kwargs)
 
 
 async def button(update, context: ContextTypes.DEFAULT_TYPE):
