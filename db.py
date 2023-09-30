@@ -45,3 +45,6 @@ def _update_city(city=None, uid=None):
     with engine.connect() as conn:
         r = conn.execute(stmt)
         conn.commit()
+
+#if __name__ == "__main__":
+    

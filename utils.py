@@ -1,6 +1,9 @@
 
 import configparser
 import logging
+from functools import wraps
+
+from db import select as _select
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -55,7 +58,7 @@ def weather_id(id: int) -> str:
     return wid
 
 def wind(w: float) -> str:
-    return '\uE252 Сильный ветер ' if w > 5 else 'Ветер' 
+    return '\uE252 Сильный ветер ' if w >= 5 else 'Ветер' 
 
 def clock(h: int) -> str:
     """
@@ -74,3 +77,25 @@ def clock(h: int) -> str:
     elif (h == 12) or (h == 0):
         clock = '\uE02F' # 12
     return clock
+
+#Декораторы 
+def decorator(func):
+    @wraps(func)
+    def wrapper(uid, city):
+        
+        name, city = _select(uid)
+
+        if name == None:
+            msg = "Прости я забыл о нашем знакомтве. Давай начнем с начала. Нажми /start "
+            return msg
+
+        if (city == None) or (len(city) == 0):
+            msg = "Прости, я не знаю какой город тебе нужен. Отправь мне /city и название города"
+            return msg
+
+        if city != None:
+        # Получить погоду
+            s = wrapper(city=city)
+            msg = f"Погода в городе {city} на ближайшее время\n" + s
+        return msg
+    return func

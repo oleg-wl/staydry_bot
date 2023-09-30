@@ -1,4 +1,3 @@
-
 import requests
 import datetime
 
@@ -6,14 +5,12 @@ from utils import default_params
 from utils import weather_id as _weather_id
 from utils import wind as _wind
 from utils import clock as _clock
-from utils import get_logger
 
 class Forecast:
 
     def __init__(self) -> None:
 
         self.r = requests.Session()
-        self.logger = get_logger(level='debug')
 
     def get_weather_12h(self, city) -> dict:
         """
@@ -69,7 +66,7 @@ class Forecast:
                 warn = _wind(wind)
                 wid = _weather_id(weather_id)
 
-                s = f'{h} в {data.hour} {wid} {desc}, {temp} градусов\n{warn} - {wind}\nОсадки - {pop}'
+                s = f'{h} в {data.hour} {wid}\n{desc}, {temp} градусов\n{warn} - {wind}\nОсадки - {pop}'
                 l.append(s)
 
                 
@@ -106,6 +103,19 @@ class Forecast:
             s = f'Сейчас {date.strftime("%H:%M %d.%m.%Y")}\n{w} {desc}\nЗа бортом {temp} градусов\nРассвет в {sunrise.strftime(fmt)} Закат в {sunset.strftime(fmt)}\n{wi} {wind} м/с\n{warn}'
             return s
         else: return 'Твой город не найден. /city чтобы добавить свой город'
+
+    def inline_weather(self, city):
+        url1 = 'https://api.openweathermap.org/geo/1.0/direct'
+        params = {
+            'q':city,
+            'appid':default_params['appid']
+            }
+        
+        c = self.r.get(url=url1, params=params).json()
+
+        if len(c) > 0:
+            lat = c[0]['lat']
+            lon = c[0]['lon']
         
         
         
