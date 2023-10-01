@@ -78,10 +78,22 @@ def clock(h: int) -> str:
         clock = '\uE02F' # 12
     return clock
 
+def city_short_names(city: str) -> str:
+    # Функция для проверки сокращений некоторых городов
+    match city.lower():
+        case "питер" | "спб" | "болото" | 'санктпетербург' | 'санктпитербург':
+            city = "Санкт-Петербург"
+        case 'мск' | 'масква':
+            city = 'Москва'
+
+        case _:
+            pass 
+    return city
+
 #Декораторы 
-def decorator_select(func1=None):
-    def decorator_weather(func2=None):
-        @wraps(func2)
+def decorator_select(func1=None):                   # Функция _select SQL-запрос в базу
+    def decorator_weather(func2=None):              # Функция т-бота для отработки в чате
+        @wraps(func2)                               # Функция внутри функции т-бота (инстанс класса Forecast)
         def wrapper(*args, **kwargs):
         
             name, city = func1(*args, **kwargs)

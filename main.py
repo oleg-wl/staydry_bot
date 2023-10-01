@@ -1,6 +1,10 @@
 #!venv/bin/python3
 # -*- coding: UTF-8 -*-
 
+#~~~~~~~~~~~~~~~~~~~~~~~
+# Основное тело бота
+#~~~~~~~~~~~~~~~~~~~~~~~
+
 from telegram import Update
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -9,9 +13,11 @@ from telegram.ext import (
     ContextTypes,
     CommandHandler,
     CallbackQueryHandler,
+    MessageHandler,
+    filters
 )
 
-from utils import bot_token, f, decorator_select
+from utils import bot_token, f, decorator_select, city_short_names
 
 import logging
 
@@ -19,6 +25,9 @@ from weather import Forecast
 from db import _select, _insert, _update_city
 
 logging.basicConfig(format=f["fmt"], level=logging.DEBUG)
+
+#Логгер для http-запросов
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +54,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await context.bot.send_message(
             chat_id=uid,
-            text=f"Привет {uname}. Прости я забыл твой город погодный бот.\nОтправь мне /city твой город\nНапример: /city Санкт-Перетбург"
+            text=f"Привет {uname}. Прости я забыл твой город.\nОтправь мне /city твой город\nНапример: /city Санкт-Перетбург"
         )
 
     else:
@@ -74,16 +83,7 @@ async def city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     city: str = " ".join(context.args).capitalize().strip()
     uid = update.effective_chat.id
 
-    # Сокращения городов
-    match city.lower():
-        case "питер" | "спб" | "болото" | 'санктпетербург' | 'санктпитербург':
-            city = "Санкт-Петербург"
-        case 'мск' | 'масква':
-            city = 'Москва'
-
-        case _:
-            pass 
-        
+    city = city_short_names(city)
     _update_city(city=city, uid=uid)
 
     if len(city) == 0:
@@ -96,10 +96,8 @@ async def city(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 #!Обернуто в декоратор из utils.py
-#Декоратор делает запрос в базу. 
-#Проверка что name и city есть в database.db
-#Если имя и город есть, делается запрос к Апи. 
-#Если ошибка (задекорирована) возвращает сообщение об ошибке
+#Декоратор делает запрос в базу данных database.py. 
+#Возвращает сообщение с ошибкой (в чат) если в базе нет города или имени пользователя 
 @decorator_select(func1=_select)
 def forecast_12h(*args, **kwargs):
         return Forecast().weather_12h(*args, **kwargs)
@@ -121,9 +119,17 @@ async def button(update, context: ContextTypes.DEFAULT_TYPE):
         case 'forecast12h':
             m = forecast_12h(uid=uid)
 
-    #await context.bot.send_message(chat_id=uid, text=m, reply_markup=rep_marcup)
     await query.edit_message_text(text=m, reply_markup=rep_marcup)
 
+async def reply_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    input: str = update.message.text
+    uid = update.effective_chat.id
+
+    msg = Forecast().current_weather(city=input.lower().rstrip())
+
+    await update.message.reply_text(text=msg)
+
+    
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(bot_token).build()
@@ -140,7 +146,8 @@ if __name__ == "__main__":
     city_handler = CommandHandler("city", city)
     app.add_handler(city_handler)
 
-    # forecast_handler = CommandHandler('forecast', forecast)
-    # app.add_handler(forecast_handler)
+    msg_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, reply_msg)
+    app.add_handler(msg_handler)
+
 
     app.run_polling()
