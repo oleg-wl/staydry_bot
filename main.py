@@ -6,6 +6,8 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~
 
 import datetime
+import pytz
+
 from telegram import Update
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -67,7 +69,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-async def help(update, context):
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_chat.id
     uname = update.effective_chat.username
     url = "https://github.com/oleg-wl/staydry_bot/issues"
@@ -108,7 +110,7 @@ def forecast_now(*args, **kwargs):
     return Forecast().current_weather(*args, **kwargs)
 
 
-async def button(update, context: ContextTypes.DEFAULT_TYPE):
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_chat.id
     query = update.callback_query
     q = query.data
@@ -170,7 +172,7 @@ async def set_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
         h = int(context.args[0])
         m = int(context.args[1]) if len(context.args) > 1 else 0
 
-        tm = datetime.time(hour=h, minute=m)
+        tm = datetime.time(hour=h, minute=m, tzinfo=pytz.timezone('Europe/Moscow'))
         logger.debug(tm)
 
         context.job_queue.run_daily(scheduled_message, tm, chat_id=uid_c, name=str(uid_c))
