@@ -5,6 +5,7 @@
 # Основное тело бота
 # ~~~~~~~~~~~~~~~~~~~~~~~
 
+from turtle import update
 from telegram import Update
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -133,7 +134,7 @@ async def reply_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def scheduled_message(context: ContextTypes.DEFAULT_TYPE):
-
+    # для планировщика расписания прислать 12ч погоду
     # https://docs.python-telegram-bot.org/en/v20.6/examples.timerbot.html
     
     job = context.job
@@ -144,14 +145,49 @@ async def scheduled_message(context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(chat_id=uid, text=msg)
 
+def remove_job(name: str, context: ContextTypes.DEFAULT_TYPE):
+    # удалить job в расписании
+
+    jobs = context.job_queue.get_jobs_by_name(name=name)
+
+    logger.debug('##############################################')
+    logger.debug(f'list ctx.jq.jobs(): {context.job_queue.jobs()}')
+    logger.debug(f'list of jobs: {jobs}')
+
+    if not jobs:
+        return False
+    for j in jobs:
+        j.schedule_removal()
+    return True
+    
+
 async def set_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
-    uid = update.effective_chat.id
+    uid_c = update.effective_chat.id
+    #uid_m = update.effective_message.id
 
+    logger.debug(f'UID_C: {uid_c}')
+
+    # сначала удалить все запланированные таймеры, если они уже установлены
+    removed_j = remove_job(str(uid_c), context=context)
+    
     #тестовый вариант секунды из contrxt.args
     #todo: переписать на run_daily
     sec = float(context.args[0])
-    context.job_queue.run_once(scheduled_message, sec, chat_id=uid)
+    context.job_queue.run_once(scheduled_message, sec, chat_id=uid_c, name=str(uid_c))
+    text = 'Таймер установлен'
+    if removed_j:
+        text = 'Таймер обновлен' 
+    await update.effective_message.reply_text(text)
+
+async def unset_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    
+    uid_c = update.effective_chat.id
+    removed_j = remove_job(str(uid_c), context=context)
+    logger.debug(f'-----------------------------------\n------- UID_M {uid_c}\nREMOVED J = {removed_j}')
+
+    t = 'Таймер отменен' if removed_j else 'У тебя нет активных таймеров'
+    await update.effective_message.reply_text(t)
 
 
 
@@ -175,5 +211,8 @@ if __name__ == "__main__":
 
     schedule_handler = CommandHandler("set_time", set_time)
     app.add_handler(schedule_handler)
+
+    schedule_handler_cancel = CommandHandler("unset_time", unset_time)
+    app.add_handler(schedule_handler_cancel)
 
     app.run_polling()
