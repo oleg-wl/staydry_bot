@@ -5,7 +5,7 @@
 # Основное тело бота
 # ~~~~~~~~~~~~~~~~~~~~~~~
 
-from turtle import update
+import datetime
 from telegram import Update
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -22,13 +22,12 @@ from telegram.ext import (
 from utils import bot_token, f, decorator_select, city_short_names
 
 import logging
-import schedule
 import time
 
 from weather import Forecast
 from db import _select, _insert, _update_city
 
-logging.basicConfig(format=f["fmt"], level=logging.DEBUG)
+logging.basicConfig(format=f["fmt"], level=logging.ERROR)
 
 # Логгер для http-запросов
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -52,7 +51,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         _insert(user_id=update.effective_chat.id, name=update.effective_chat.username)
         await context.bot.send_message(
             chat_id=uid,
-            text=f"Приятно познакомиться {uname}. Я погодный бот.\nСкажи мне свой город и я смогу присылать тебе погоду на ближайшее время.\nОтправь мне /city и твой город\nНапример: /city Санкт-Перетбург",
+            text=f"Приятно познакомиться {uname}. Я погодный бот.\nСкажи мне свой город и я смогу присылать тебе погоду на ближайшее время.\nОтправь мне /city и твой город\nНапример: /city Санкт-Перетбург\n\nТы можешь узнать погоду в любом городе, просто напиши город в чат\n\nЕще я могу присылать тебе прогноз каждый день, скажи когда: /set_time час минуты, например: /set_time 10 00",
         )
     elif city == None:
         await context.bot.send_message(
@@ -73,7 +72,7 @@ async def help(update, context):
     uname = update.effective_chat.username
     url = "https://github.com/oleg-wl/staydry_bot/issues"
 
-    msg = f'Привет {uname},\nБот запомнит твой город и пршлет тебе текущий прогноз и прогноз за ближайшее время\n/start - начни общение с ботом\n/city <i>_твой город_</i> поменять город\n\n&#128204; Если что-то сломалось - пиши мне <a href="{url}">на гитхабе</a>'
+    msg = f'Привет {uname},\nБот запомнит твой город и пршлет тебе текущий прогноз и прогноз за ближайшее время\n/start - начни общение с ботом\n/city <i>_твой город_</i> поменять город\n/set_time часы минуты - бот будет присылать тебе каждый день прогноз на 12 часов в указанное время. Например /set_time 10 00 \n Не забудь указать город\n&#128204; Если что-то сломалось - пиши мне <a href="{url}">на гитхабе</a>'
 
     await context.bot.send_message(
         chat_id=uid, text=msg, parse_mode="HTML", disable_web_page_preview=True
@@ -164,27 +163,29 @@ def remove_job(name: str, context: ContextTypes.DEFAULT_TYPE):
 async def set_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     uid_c = update.effective_chat.id
-    #uid_m = update.effective_message.id
-
-    logger.debug(f'UID_C: {uid_c}')
-
     # сначала удалить все запланированные таймеры, если они уже установлены
-    removed_j = remove_job(str(uid_c), context=context)
+    try:
+        removed_j = remove_job(str(uid_c), context=context)
     
-    #тестовый вариант секунды из contrxt.args
-    #todo: переписать на run_daily
-    sec = float(context.args[0])
-    context.job_queue.run_once(scheduled_message, sec, chat_id=uid_c, name=str(uid_c))
-    text = 'Таймер установлен'
-    if removed_j:
-        text = 'Таймер обновлен' 
-    await update.effective_message.reply_text(text)
+        h = int(context.args[0])
+        m = int(context.args[1]) if len(context.args) > 1 else 0
+
+        tm = datetime.time(hour=h, minute=m)
+        logger.debug(tm)
+
+        context.job_queue.run_daily(scheduled_message, tm, chat_id=uid_c, name=str(uid_c))
+        text = f'Таймер установлен на {h}:{m} каждый день'
+        if removed_j:
+            text = f'Таймер обновлен на {h}:{m} каждый день' 
+        await update.effective_message.reply_text(text)
+
+    except (IndexError, ValueError):
+        await update.effective_message.reply_text("Ой вей, ошибочка. Укажи час и минуту через пробел. Например /set_time 10 00 для прогноза в 10 утра мск")
 
 async def unset_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     uid_c = update.effective_chat.id
     removed_j = remove_job(str(uid_c), context=context)
-    logger.debug(f'-----------------------------------\n------- UID_M {uid_c}\nREMOVED J = {removed_j}')
 
     t = 'Таймер отменен' if removed_j else 'У тебя нет активных таймеров'
     await update.effective_message.reply_text(t)
